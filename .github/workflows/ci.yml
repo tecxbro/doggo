@@ -31,13 +31,6 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
-      - name: Upload generated lockfile
-        uses: actions/upload-artifact@v4
-        with:
-          name: npm-lockfile
-          path: package-lock.json
-          retention-days: 1
-
       - name: Typecheck agent
         run: npm run typecheck
 
