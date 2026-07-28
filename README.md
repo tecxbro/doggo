@@ -47,7 +47,7 @@ Add these values to `agent/.env`:
 
 The legacy names `PHOTON_PROJECT_ID` and `PHOTON_PROJECT_SECRET` are accepted, but the standard Spectrum names are preferred.
 
-`OPENROUTER_MODEL` defaults to `openrouter/free`. OpenRouter routes each request to an available free model that supports the required structured-output parameters. Free-model availability and latency can vary, which is acceptable for this event experiment.
+`OPENROUTER_MODEL` defaults to `google/gemma-4-26b-a4b-it:free`, a zero-cost OpenRouter model with structured-output support. It can be overridden with another compatible model if availability changes.
 
 Run repository checks, then start the agent:
 
