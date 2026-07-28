@@ -28,7 +28,7 @@ const SUPPORTED_IMAGE_TYPES = new Set([
 ]);
 
 export type ProfileForPolicy = Partial<Record<(typeof REQUIRED_PROFILE_FIELDS)[number], string>> & {
-  photoStorageIds: string[];
+  photoFileIds: string[];
 };
 
 export function normalizeInboundText(text: string | undefined):
@@ -51,7 +51,7 @@ export function missingProfileFields(profile: ProfileForPolicy): string[] {
     return typeof value !== "string" || value.trim().length === 0;
   }).map(String);
 
-  if (profile.photoStorageIds.length === 0) missing.push("dogPhoto");
+  if (profile.photoFileIds.length === 0) missing.push("dogPhoto");
   return missing;
 }
 
@@ -63,8 +63,8 @@ export function profileWouldBeComplete(
   const merged: ProfileForPolicy = {
     ...profile,
     ...extracted,
-    photoStorageIds:
-      receivedImage && profile.photoStorageIds.length === 0 ? ["received"] : profile.photoStorageIds,
+    photoFileIds:
+      receivedImage && profile.photoFileIds.length === 0 ? ["received"] : profile.photoFileIds,
   };
   return missingProfileFields(merged).length === 0;
 }
