@@ -37,7 +37,19 @@ jobs:
       - name: Run unit tests
         run: npm test
 
-      - name: Audit production dependencies
+      - name: Capture production dependency audit
+        if: always()
+        run: npm audit --omit=dev --json > npm-audit.json || true
+
+      - name: Upload dependency audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit
+          path: npm-audit.json
+          retention-days: 1
+
+      - name: Enforce production dependency audit
         run: npm audit --omit=dev --audit-level=high
 
       - name: Build production container
