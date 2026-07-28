@@ -10,8 +10,10 @@ const normalizedEnvironment = {
 const EnvSchema = z.object({
   SPECTRUM_PROJECT_ID: z.string().trim().min(1),
   SPECTRUM_PROJECT_SECRET: z.string().trim().min(1),
-  CONVEX_URL: z.string().url(),
-  AGENT_SHARED_SECRET: z.string().min(32),
+  GOOGLE_SERVICE_ACCOUNT_EMAIL: z.string().trim().email(),
+  GOOGLE_PRIVATE_KEY: z.string().trim().min(100),
+  GOOGLE_SPREADSHEET_ID: z.string().trim().min(10),
+  GOOGLE_DRIVE_FOLDER_ID: z.string().trim().min(10),
   OPENROUTER_API_KEY: z.string().trim().min(1),
   OPENROUTER_MODEL: z
     .string()
@@ -34,8 +36,10 @@ if (!parsed.success) {
 export const config = {
   spectrumProjectId: parsed.data.SPECTRUM_PROJECT_ID,
   spectrumProjectSecret: parsed.data.SPECTRUM_PROJECT_SECRET,
-  convexUrl: parsed.data.CONVEX_URL,
-  agentSharedSecret: parsed.data.AGENT_SHARED_SECRET,
+  googleServiceAccountEmail: parsed.data.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+  googlePrivateKey: parsed.data.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+  googleSpreadsheetId: parsed.data.GOOGLE_SPREADSHEET_ID,
+  googleDriveFolderId: parsed.data.GOOGLE_DRIVE_FOLDER_ID,
   openrouterApiKey: parsed.data.OPENROUTER_API_KEY,
   openrouterModel: parsed.data.OPENROUTER_MODEL,
   port: parsed.data.PORT,
