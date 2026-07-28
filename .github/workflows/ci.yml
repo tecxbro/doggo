@@ -31,8 +31,14 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
-      - name: Run type checks and unit tests
-        run: npm run check
+      - name: Typecheck agent
+        run: npm run typecheck
+
+      - name: Typecheck Convex functions
+        run: npm run convex:typecheck
+
+      - name: Run unit tests
+        run: npm test
 
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
