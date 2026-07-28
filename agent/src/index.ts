@@ -5,7 +5,7 @@ import { Spectrum } from "spectrum-ts";
 import { imessage } from "spectrum-ts/providers/imessage";
 
 import { config } from "./config.js";
-import { recordOutboundMessage } from "./convex.js";
+import { initializeGoogleStorage, recordOutboundMessage } from "./google.js";
 import { handleMessage, type IncomingAttachment } from "./messageHandler.js";
 
 let ready = false;
@@ -25,6 +25,9 @@ const healthServer = createServer((request, response) => {
 healthServer.listen(config.port, "0.0.0.0", () => {
   console.log(`Datto health endpoint listening on port ${config.port}`);
 });
+
+await initializeGoogleStorage();
+console.log("Datto is connected to Google Sheets and Drive");
 
 const app = await Spectrum({
   projectId: config.spectrumProjectId,
