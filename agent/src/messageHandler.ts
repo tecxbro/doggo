@@ -8,7 +8,7 @@ import {
   type ContentType,
   type DattoProfile,
 } from "./convex.js";
-import { generateAgentResult, type AgentResult } from "./openai.js";
+import { generateAgentResult, type AgentResult } from "./openrouter.js";
 
 const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 
