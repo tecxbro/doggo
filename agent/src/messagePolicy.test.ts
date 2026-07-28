@@ -63,7 +63,8 @@ test("requires profile fields and a dog photo", () => {
 });
 
 test("only completes after all missing fields are supplied", () => {
-  const incomplete = { ...completeProfile, availability: undefined, photoStorageIds: [] };
+  const { availability: _availability, ...withoutAvailability } = completeProfile;
+  const incomplete = { ...withoutAvailability, photoStorageIds: [] };
   assert.equal(
     profileWouldBeComplete(incomplete, { availability: "Friday evening" }, true),
     true,
