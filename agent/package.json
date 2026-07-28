@@ -14,7 +14,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "convex": "^1.42.3",
+    "googleapis": "^173.0.0",
     "spectrum-ts": "12.4.0",
     "zod": "^4.4.3"
   },

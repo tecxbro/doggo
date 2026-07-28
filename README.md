@@ -1,8 +1,8 @@
 # Datto
 
-Datto is a small, one-event dog matchmaking experiment over iMessage. Photon Spectrum receives and sends messages, one Node 22 service runs the matchmaker agent, NVIDIA Nemotron 3 Ultra on OpenRouter produces short structured replies and profile extraction, and Convex stores profiles, messages, dog photos, and human-created matches.
+Datto is a small, one-event dog matchmaking experiment over iMessage. Photon Spectrum receives and sends messages, one Node 22 service runs the matchmaker agent, NVIDIA Nemotron 3 Ultra on OpenRouter produces short structured replies and profile extraction, and Google Sheets plus Google Drive hold the event data.
 
-There is no automatic matching or custom admin dashboard. The event team reviews profiles, updates `humanStatus` and `humanNotes`, and creates `matches` directly in the Convex dashboard.
+There is no automatic matching or custom admin dashboard. The event team reviews and edits the `Profiles`, `Messages`, and `Matches` tabs directly in Google Sheets.
 
 ## Architecture
 
@@ -13,91 +13,103 @@ Photon Spectrum managed lines
   ↕
 agent/ (one persistent Node service)
   ↕
-Convex (profiles, messages, photos, matches)
+Google Sheets (profiles, messages, matches)
+Google Drive (dog photos)
   ↕
 OpenRouter (structured matchmaker response)
 ```
 
 Photon discovers the project’s managed iMessage lines from the Spectrum project credentials. The service does not allocate or hardcode a phone number.
 
-## Setup
+## Google setup
 
-Install dependencies and connect the Convex project:
+`golchhad@uci.edu` can own the spreadsheet and Shared Drive, but it is a human Google account, not a service account. Create a separate service account in Google Cloud; its email will look like `datto-agent@your-project.iam.gserviceaccount.com`.
+
+1. Create or select a Google Cloud project.
+2. Enable the Google Sheets API and Google Drive API.
+3. Create a service account and download one JSON key.
+4. Create a blank Google Sheet. Datto creates and maintains the `Profiles`, `Messages`, and `Matches` tabs automatically.
+5. Create a folder inside a Google Shared Drive for dog photos. A service account cannot own ordinary My Drive files, so a normal My Drive folder is not sufficient for this configuration.
+6. Share the spreadsheet with the service-account email as Editor.
+7. Give the service account access to the Shared Drive folder.
+8. Copy the spreadsheet ID from the Sheet URL and the folder ID from the Drive URL.
+
+Delete the downloaded JSON key after its values have been placed in your deployment secret manager. Never commit the JSON file.
+
+## Environment variables
+
+Copy the example file for local development:
 
 ```bash
 npm install
-npx convex dev
 cp agent/.env.example agent/.env
 ```
 
-Generate one random service secret and set the same value in Convex and `agent/.env`:
+Set:
 
-```bash
-openssl rand -hex 32
-npx convex env set AGENT_SHARED_SECRET
+```env
+SPECTRUM_PROJECT_ID=
+SPECTRUM_PROJECT_SECRET=
+GOOGLE_SERVICE_ACCOUNT_EMAIL=datto-agent@your-project.iam.gserviceaccount.com
+GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+GOOGLE_SPREADSHEET_ID=
+GOOGLE_DRIVE_FOLDER_ID=
+OPENROUTER_API_KEY=
+OPENROUTER_MODEL=nvidia/nemotron-3-ultra-550b-a55b:free
+PORT=3000
 ```
 
-Add these values to `agent/.env`:
-
-- `SPECTRUM_PROJECT_ID` and `SPECTRUM_PROJECT_SECRET` from Photon
-- `CONVEX_URL` printed by Convex
-- `AGENT_SHARED_SECRET`, matching the Convex environment variable
-- `OPENROUTER_API_KEY` from OpenRouter
-- optional `OPENROUTER_MODEL` and `PORT`
-
-The legacy names `PHOTON_PROJECT_ID` and `PHOTON_PROJECT_SECRET` are accepted, but the standard Spectrum names are preferred.
-
-`OPENROUTER_MODEL` defaults to `nvidia/nemotron-3-ultra-550b-a55b:free`. Datto requests high reasoning and strict structured JSON output. You may override the model without changing the code.
+Use the `client_email` and `private_key` fields from the service-account JSON. `GOOGLE_PRIVATE_KEY` accepts either real line breaks or escaped `\n` sequences.
 
 Review the selected model provider’s data-use terms before a real-user launch because event messages may contain user-submitted names, general locations, and availability.
 
-Run repository checks, then start the agent:
+## Run locally
 
 ```bash
 npm run check
 npm run dev --workspace datto-agent
 ```
 
-The health endpoint is `GET /health` on `PORT`. A `200` response means Spectrum initialization completed; `503` means the process is still starting.
+The health endpoint is `GET /health` on `PORT`. A `200` response means both Google storage and Photon Spectrum initialized successfully; `503` means the process is still starting.
 
-## Deploy Convex
+## Deploy on Northflank
 
-After selecting or creating the production deployment, set its service secret and deploy:
+Create one service from this repository with:
 
-```bash
-npx convex env set --prod AGENT_SHARED_SECRET
-npx convex deploy
+```text
+Build context: agent
+Dockerfile: agent/Dockerfile
+Port: 3000
+Health check: /health
 ```
 
-For non-interactive deployment, set `CONVEX_DEPLOY_KEY` before running `npx convex deploy`.
+Add every variable from `agent/.env.example` in Northflank’s environment-variable or secret settings. Do not upload the service-account JSON file to the repository.
 
-## Build and run the container
+## Spreadsheet layout
 
-```bash
-docker build -t datto-agent ./agent
-docker run --rm --env-file agent/.env -p 3000:3000 datto-agent
-```
+`Profiles` contains one row per Spectrum user, including the extracted dog profile, Drive photo links, profile completion, human status, and notes.
 
-The same image can run on any persistent Node/container host. The container runs as the unprivileged `node` user and includes a health check.
+`Messages` contains one row per inbound or outbound message. `spectrum_message_id` is used for deduplication.
+
+`Matches` is intentionally human-operated. Add the two profile user IDs, status, notes, and timestamps directly in the sheet.
 
 ## Checks
 
 ```bash
 npm run typecheck
-npm run convex:typecheck
 npm test
 npm run check
 docker build -t datto-agent ./agent
 ```
 
-GitHub Actions runs TypeScript checks, unit tests, a production dependency audit, and a Docker build. CodeQL separately scans JavaScript and TypeScript changes. CI does not contact Photon, Convex, or OpenRouter and therefore needs no production secrets.
+GitHub Actions runs TypeScript checks, unit tests, a production dependency audit, a Docker build, and CodeQL. CI does not contact Photon, Google, or OpenRouter and therefore needs no production secrets.
 
 ## Data and safety
 
-- Convex agent functions require `AGENT_SHARED_SECRET`; never expose it to a browser or commit it.
-- Exact home addresses should not be requested or stored.
+- Do not request or store exact home addresses.
 - Text input is capped at 4,000 characters.
 - Dog photos are capped at 10 MB and restricted to common raster photo formats; SVG is rejected.
-- Convex file URLs are bearer URLs. Share them only with event staff and delete event data when it is no longer needed.
+- Restrict the spreadsheet and Shared Drive to event staff and the service account.
+- Delete event messages and photos after the retention period.
 
 See [SECURITY.md](SECURITY.md) for reporting and operational guidance.
