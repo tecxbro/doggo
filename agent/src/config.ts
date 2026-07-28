@@ -13,7 +13,11 @@ const EnvSchema = z.object({
   CONVEX_URL: z.string().url(),
   AGENT_SHARED_SECRET: z.string().min(32),
   OPENROUTER_API_KEY: z.string().trim().min(1),
-  OPENROUTER_MODEL: z.string().trim().min(1).default("openrouter/free"),
+  OPENROUTER_MODEL: z
+    .string()
+    .trim()
+    .min(1)
+    .default("google/gemma-4-26b-a4b-it:free"),
   PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
 });
 
