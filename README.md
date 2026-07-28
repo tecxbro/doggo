@@ -1,6 +1,6 @@
 # Datto
 
-Datto is a small, one-event dog matchmaking experiment over iMessage. Photon Spectrum receives and sends messages, a Node 22 service runs the conversation agent, OpenAI produces short structured replies and profile extraction, and Convex stores profiles, messages, photos, and human-created matches.
+Datto is a small, one-event dog matchmaking experiment over iMessage. Photon Spectrum receives and sends messages, a Node 22 service runs the conversation agent, OpenRouter's free-model router produces short structured replies and profile extraction, and Convex stores profiles, messages, photos, and human-created matches.
 
 There is no automatic matching or custom admin dashboard. The event team reviews profiles, updates `humanStatus` and `humanNotes`, and creates `matches` directly in the Convex dashboard.
 
@@ -17,8 +17,10 @@ Add the values in `agent/.env`:
 
 - `PHOTON_PROJECT_ID` and `PHOTON_PROJECT_SECRET` from Photon
 - `CONVEX_URL` printed by Convex
-- `OPENAI_API_KEY`
-- optional `OPENAI_MODEL` and `PORT`
+- `OPENROUTER_API_KEY` from OpenRouter
+- optional `OPENROUTER_MODEL` and `PORT`
+
+`OPENROUTER_MODEL` defaults to `openrouter/free`. OpenRouter chooses an available free model that supports Datto's required structured JSON output. You may replace it with a specific `:free` model slug later without changing the code.
 
 Run checks and the service:
 
