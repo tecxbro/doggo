@@ -6,7 +6,7 @@ import {
   recordInboundMessage,
   uploadPhoto,
   type ContentType,
-} from "./convex.js";
+} from "./google.js";
 import {
   isExplicitConfirmation,
   isSupportedDogPhoto,
@@ -42,7 +42,10 @@ function getContentType(message: IncomingMessage): ContentType {
   return "text";
 }
 
-function getStoredText(message: IncomingMessage, normalizedText: ReturnType<typeof normalizeInboundText>): string | undefined {
+function getStoredText(
+  message: IncomingMessage,
+  normalizedText: ReturnType<typeof normalizeInboundText>,
+): string | undefined {
   if (normalizedText.kind === "accepted") return normalizedText.text;
   if (normalizedText.kind === "too_long") {
     return `[text omitted: exceeded ${MAX_TEXT_CHARACTERS} characters]`;
@@ -108,11 +111,16 @@ export async function handleMessage(message: IncomingMessage): Promise<AgentResu
         };
       }
 
-      const storageId = await uploadPhoto(bytes, message.attachment.mimeType);
+      const uploaded = await uploadPhoto(
+        bytes,
+        message.attachment.mimeType,
+        message.attachment.name,
+      );
       await attachPhoto({
         profileId: profile._id,
         spectrumMessageId: message.spectrumMessageId,
-        storageId,
+        fileId: uploaded.fileId,
+        url: uploaded.url,
       });
       receivedImage = true;
     } catch (error) {
