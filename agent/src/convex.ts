@@ -6,7 +6,7 @@ import type { ProfileExtraction } from "./agentResult.js";
 import { config } from "./config.js";
 
 const client = new ConvexHttpClient(config.convexUrl);
-const datto = anyApi.datto;
+const datto = (anyApi as any).datto;
 const authenticated = { agentSecret: config.agentSharedSecret } as const;
 
 export type ContentType = "text" | "image" | "attachment";
