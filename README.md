@@ -1,6 +1,6 @@
 # Datto
 
-Datto is a small, one-event dog matchmaking experiment over iMessage. Photon Spectrum receives and sends messages, one Node 22 service runs the matchmaker agent, NVIDIA Nemotron 3 Ultra on OpenRouter produces short structured replies and profile extraction, and Google Sheets plus Google Drive hold the event data.
+Datto is a small, one-event dog matchmaking experiment over iMessage. Photon Spectrum receives and sends messages, one persistent Node 22 service runs the matchmaker agent, NVIDIA Nemotron 3 Ultra on OpenRouter produces short structured replies and profile extraction, and Composio supplies managed Google OAuth for Google Sheets and Google Drive.
 
 There is no automatic matching or custom admin dashboard. The event team reviews and edits the `Profiles`, `Messages`, and `Matches` tabs directly in Google Sheets.
 
@@ -11,7 +11,9 @@ iMessage user
   ↕
 Photon Spectrum managed lines
   ↕
-agent/ (one persistent Node service)
+agent/ on Northflank
+  ↕
+Composio managed Google OAuth
   ↕
 Google Sheets (profiles, messages, matches)
 Google Drive (dog photos)
@@ -21,27 +23,40 @@ OpenRouter (structured matchmaker response)
 
 Photon discovers the project’s managed iMessage lines from the Spectrum project credentials. The service does not allocate or hardcode a phone number.
 
-## Google setup
+## Create the Google resources
 
-`golchhad@uci.edu` can own the spreadsheet and Shared Drive, but it is a human Google account, not a service account. Create a separate service account in Google Cloud; its email will look like `datto-agent@your-project.iam.gserviceaccount.com`.
+1. Create one blank Google Sheet, for example `Datto Event Database`.
+2. Create one Google Drive folder, for example `Datto Dog Photos`.
+3. Copy the spreadsheet ID from the Sheet URL and the folder ID from the Drive URL.
 
-1. Create or select a Google Cloud project.
-2. Enable the Google Sheets API and Google Drive API.
-3. Create a service account and download one JSON key.
-4. Create a blank Google Sheet. Datto creates and maintains the `Profiles`, `Messages`, and `Matches` tabs automatically.
-5. Create a folder inside a Google Shared Drive for dog photos. A service account cannot own ordinary My Drive files, so a normal My Drive folder is not sufficient for this configuration.
-6. Share the spreadsheet with the service-account email as Editor.
-7. Give the service account access to the Shared Drive folder.
-8. Copy the spreadsheet ID from the Sheet URL and the folder ID from the Drive URL.
+The folder may be in ordinary My Drive because Composio uses your OAuth-authorized Google account rather than a service account. Datto creates and maintains the `Profiles`, `Messages`, and `Matches` tabs automatically.
 
-Delete the downloaded JSON key after its values have been placed in your deployment secret manager. Never commit the JSON file.
+Use a dedicated event Google account when possible. The Google OAuth scopes used by the Sheets and Drive toolkits may allow access beyond these two Datto resources.
+
+## Connect Google through Composio
+
+1. Create a Composio project and API key at `https://platform.composio.dev/`.
+2. The deployment API key must be allowed to create/use sessions and perform Proxy Execute requests.
+3. Install dependencies.
+4. Export the API key and a stable Composio user ID.
+5. Run the connection helper.
+
+```bash
+npm install
+export COMPOSIO_API_KEY='your-project-api-key'
+export COMPOSIO_USER_ID='datto-admin'
+npm run composio:connect --workspace datto-agent
+```
+
+Open every authorization URL printed by the command and sign in to the Google account that owns the Datto spreadsheet and photo folder. The helper connects both the `googlesheets` and `googledrive` toolkits under the same Composio user ID.
+
+If that Composio user has only one active account for each toolkit, no connection IDs are required. When multiple Google accounts are connected, set the optional connection IDs so the deployment cannot select the wrong account.
 
 ## Environment variables
 
 Copy the example file for local development:
 
 ```bash
-npm install
 cp agent/.env.example agent/.env
 ```
 
@@ -50,18 +65,25 @@ Set:
 ```env
 SPECTRUM_PROJECT_ID=
 SPECTRUM_PROJECT_SECRET=
-GOOGLE_SERVICE_ACCOUNT_EMAIL=datto-agent@your-project.iam.gserviceaccount.com
-GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+
+COMPOSIO_API_KEY=
+COMPOSIO_USER_ID=datto-admin
+COMPOSIO_GOOGLE_SHEETS_CONNECTION_ID=
+COMPOSIO_GOOGLE_DRIVE_CONNECTION_ID=
+
 GOOGLE_SPREADSHEET_ID=
 GOOGLE_DRIVE_FOLDER_ID=
+
 OPENROUTER_API_KEY=
 OPENROUTER_MODEL=nvidia/nemotron-3-ultra-550b-a55b:free
 PORT=3000
 ```
 
-Use the `client_email` and `private_key` fields from the service-account JSON. `GOOGLE_PRIVATE_KEY` accepts either real line breaks or escaped `\n` sequences.
+`COMPOSIO_GOOGLE_SHEETS_CONNECTION_ID` and `COMPOSIO_GOOGLE_DRIVE_CONNECTION_ID` are optional. Leave them blank when exactly one active connection exists for each toolkit. The legacy names `PHOTON_PROJECT_ID` and `PHOTON_PROJECT_SECRET` remain accepted.
 
-Review the selected model provider’s data-use terms before a real-user launch because event messages may contain user-submitted names, general locations, and availability.
+Datto uses Composio Tool Router sessions with the sandbox disabled. Google API requests go through Composio Proxy Execute so the agent never receives or stores Google access or refresh tokens.
+
+Review the selected OpenRouter model provider’s data-use terms before a real-user launch because event messages may contain user-submitted names, general locations, and availability.
 
 ## Run locally
 
@@ -70,20 +92,25 @@ npm run check
 npm run dev --workspace datto-agent
 ```
 
-The health endpoint is `GET /health` on `PORT`. A `200` response means both Google storage and Photon Spectrum initialized successfully; `503` means the process is still starting.
+The health endpoint is `GET /health` on `PORT`. A `200` response means Composio-backed Google storage and Photon Spectrum both initialized successfully; `503` means the process is still starting.
 
 ## Deploy on Northflank
 
-Create one service from this repository with:
+Create one combined service from this repository with:
 
 ```text
+Repository: tecxbro/doggo
+Branch: main
 Build context: agent
-Dockerfile: agent/Dockerfile
+Dockerfile inside build context: Dockerfile
 Port: 3000
 Health check: /health
+Replicas: 1
 ```
 
-Add every variable from `agent/.env.example` in Northflank’s environment-variable or secret settings. Do not upload the service-account JSON file to the repository.
+Add every variable from `agent/.env.example` through Northflank runtime variables or a secret group. Do not put credentials in Docker build arguments or commit a real `.env` file.
+
+Use one replica for the event so only one persistent process consumes the Photon message stream and writes to the spreadsheet.
 
 ## Spreadsheet layout
 
@@ -102,14 +129,15 @@ npm run check
 docker build -t datto-agent ./agent
 ```
 
-GitHub Actions runs TypeScript checks, unit tests, a production dependency audit, a Docker build, and CodeQL. CI does not contact Photon, Google, or OpenRouter and therefore needs no production secrets.
+GitHub Actions runs TypeScript checks, unit tests, a production dependency audit, a Docker build, and CodeQL. CI does not contact Photon, Composio, Google, or OpenRouter and therefore needs no production credentials.
 
 ## Data and safety
 
 - Do not request or store exact home addresses.
 - Text input is capped at 4,000 characters.
 - Dog photos are capped at 10 MB and restricted to common raster photo formats; SVG is rejected.
-- Restrict the spreadsheet and Shared Drive to event staff and the service account.
-- Delete event messages and photos after the retention period.
+- Use a dedicated or minimally privileged Google account for the Composio connection.
+- Restrict the spreadsheet and photo folder to event staff.
+- Revoke the Composio Google connections and delete event messages and photos after the retention period.
 
 See [SECURITY.md](SECURITY.md) for reporting and operational guidance.
