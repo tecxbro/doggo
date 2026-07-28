@@ -6,7 +6,7 @@ import {
   recordInboundMessage,
   uploadPhoto,
   type ContentType,
-} from "./google.js";
+} from "./composio.js";
 import {
   isExplicitConfirmation,
   isSupportedDogPhoto,
