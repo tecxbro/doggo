@@ -12,23 +12,29 @@ The agent requires:
 
 - `SPECTRUM_PROJECT_SECRET`
 - `OPENROUTER_API_KEY`
-- `AGENT_SHARED_SECRET`
+- `GOOGLE_SERVICE_ACCOUNT_EMAIL`
+- `GOOGLE_PRIVATE_KEY`
+- `GOOGLE_SPREADSHEET_ID`
+- `GOOGLE_DRIVE_FOLDER_ID`
 
-Store them only in the deployment provider and Convex environment settings. Never place real values in `.env.example`, GitHub Actions YAML, screenshots, logs, or issues.
+Store real values only in the deployment provider’s secret manager. Never place them in `.env.example`, GitHub Actions YAML, screenshots, logs, issues, or committed JSON files.
 
-`AGENT_SHARED_SECRET` must be at least 32 characters and must have the same value in the agent deployment and the corresponding Convex deployment. Rotate it after accidental exposure.
+The Google service-account key grants access to every resource shared with that identity. Give it access only to the Datto spreadsheet and photo folder, and rotate or delete the key after accidental exposure.
 
-## Public Convex surface
+## Google Workspace access
 
-Convex functions are public endpoints by default. Every function used by the external Node agent validates `AGENT_SHARED_SECRET` before reading or writing data. New externally callable Convex functions must add equivalent access control and runtime argument validation.
+- Use a dedicated service account, not a personal email address, as the application identity.
+- Restrict the spreadsheet and Shared Drive folder to event staff and the service account.
+- Keep dog photos inside a Shared Drive folder; service accounts cannot own ordinary My Drive files.
+- Do not publish Drive files with `anyone with the link` permissions.
+- Remove the service account from the spreadsheet and Shared Drive after the event.
 
 ## Personal data
 
 - Do not request exact home addresses.
 - Do not log phone numbers or raw message bodies.
-- Limit access to the Convex dashboard to event staff.
 - Delete profiles, conversations, matches, and stored photos after the event retention period.
-- Convex file URLs act as bearer URLs and can be reshared by anyone who receives one.
+- Treat spreadsheet IDs, Drive file IDs, and photo links as private operational data.
 
 ## Input and dependency controls
 
@@ -40,4 +46,4 @@ Convex functions are public endpoints by default. Every function used by the ext
 
 ## Deployment
 
-Run the agent as a non-root container user. Expose only the health endpoint publicly. Do not expose a debug endpoint, environment dump, or Convex service secret through the web application.
+Run the agent as a non-root container user. Expose only the health endpoint. Do not expose a debug endpoint, environment dump, Google private key, or provider credential through the web application.
