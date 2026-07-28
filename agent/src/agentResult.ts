@@ -1,26 +1,30 @@
 import { z } from "zod";
 
-const ExtractedSchema = z.object({
-  ownerName: z.string().nullable(),
-  dogName: z.string().nullable(),
-  age: z.string().nullable(),
-  breed: z.string().nullable(),
-  size: z.string().nullable(),
-  gender: z.string().nullable(),
-  location: z.string().nullable(),
-  personality: z.string().nullable(),
-  energyLevel: z.string().nullable(),
-  socialBehavior: z.string().nullable(),
-  preferredMeetup: z.string().nullable(),
-  availability: z.string().nullable(),
-  dealbreakers: z.string().nullable(),
-});
+const ExtractedSchema = z
+  .object({
+    ownerName: z.string().nullable(),
+    dogName: z.string().nullable(),
+    age: z.string().nullable(),
+    breed: z.string().nullable(),
+    size: z.string().nullable(),
+    gender: z.string().nullable(),
+    location: z.string().nullable(),
+    personality: z.string().nullable(),
+    energyLevel: z.string().nullable(),
+    socialBehavior: z.string().nullable(),
+    preferredMeetup: z.string().nullable(),
+    availability: z.string().nullable(),
+    dealbreakers: z.string().nullable(),
+  })
+  .strict();
 
-const RawAgentResultSchema = z.object({
-  replies: z.array(z.string()).min(1).max(2),
-  extracted: ExtractedSchema,
-  profileComplete: z.boolean(),
-});
+const RawAgentResultSchema = z
+  .object({
+    replies: z.array(z.string()).min(1).max(2),
+    extracted: ExtractedSchema,
+    profileComplete: z.boolean(),
+  })
+  .strict();
 
 export const AGENT_RESULT_JSON_SCHEMA = {
   type: "object",
