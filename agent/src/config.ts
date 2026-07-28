@@ -9,7 +9,7 @@ const EnvSchema = z.object({
     .string()
     .trim()
     .min(1)
-    .default("google/gemma-4-26b-a4b-it:free"),
+    .default("nvidia/nemotron-3-ultra-550b-a55b:free"),
   PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
 });
 
