@@ -23,7 +23,7 @@ const completeProfile = {
   preferredMeetup: "park walk",
   availability: "Sunday afternoon",
   dealbreakers: "no off-leash dates",
-  photoStorageIds: ["photo_1"],
+  photoFileIds: ["photo_1"],
 };
 
 test("normalizes ordinary text and rejects oversized input", () => {
@@ -44,7 +44,7 @@ test("accepts common dog photo formats but rejects SVG", () => {
 });
 
 test("requires profile fields and a dog photo", () => {
-  assert.deepEqual(missingProfileFields({ photoStorageIds: [] }), [
+  assert.deepEqual(missingProfileFields({ photoFileIds: [] }), [
     "ownerName",
     "dogName",
     "age",
@@ -64,7 +64,7 @@ test("requires profile fields and a dog photo", () => {
 
 test("only completes after all missing fields are supplied", () => {
   const { availability: _availability, ...withoutAvailability } = completeProfile;
-  const incomplete = { ...withoutAvailability, photoStorageIds: [] };
+  const incomplete = { ...withoutAvailability, photoFileIds: [] };
   assert.equal(
     profileWouldBeComplete(incomplete, { availability: "Friday evening" }, true),
     true,
