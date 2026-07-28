@@ -136,6 +136,10 @@ export async function generateAgentResult(context: AgentContext): Promise<AgentR
         { role: "system", content: DATTO_PROMPT },
         { role: "user", content: JSON.stringify(context) },
       ],
+      reasoning: {
+        effort: "high",
+        exclude: true,
+      },
       response_format: {
         type: "json_schema",
         json_schema: {
@@ -149,7 +153,7 @@ export async function generateAgentResult(context: AgentContext): Promise<AgentR
       },
       stream: false,
     }),
-    signal: AbortSignal.timeout(45_000),
+    signal: AbortSignal.timeout(90_000),
   });
 
   if (!response.ok) {
