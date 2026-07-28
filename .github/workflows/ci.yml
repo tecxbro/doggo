@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -32,7 +33,30 @@ jobs:
         run: npm install --no-audit --no-fund
 
       - name: Typecheck agent
-        run: npm run typecheck
+        id: agent-typecheck
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run typecheck 2>&1 | tee agent-typecheck.log
+
+      - name: Post typecheck diagnostics
+        if: github.event_name == 'pull_request' && steps.agent-typecheck.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const log = fs.readFileSync('agent-typecheck.log', 'utf8').slice(-12000);
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `<!-- datto-ci-diagnostic -->\n### Agent typecheck failed\n\n\`\`\`text\n${log}\n\`\`\``
+            });
+
+      - name: Stop after agent typecheck failure
+        if: steps.agent-typecheck.outcome == 'failure'
+        run: exit 1
 
       - name: Typecheck Convex functions
         run: npm run convex:typecheck
