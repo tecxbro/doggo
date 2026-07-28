@@ -1,6 +1,6 @@
 # Datto
 
-Datto is a small, one-event dog matchmaking experiment over iMessage. Photon Spectrum receives and sends messages, a Node 22 service runs the conversation agent, Google's Gemma 4 26B free model on OpenRouter produces short structured replies and profile extraction, and Convex stores profiles, messages, photos, and human-created matches.
+Datto is a small, one-event dog matchmaking experiment over iMessage. Photon Spectrum receives and sends messages, a Node 22 service runs the conversation agent, NVIDIA Nemotron 3 Ultra on OpenRouter produces short structured replies and profile extraction, and Convex stores profiles, messages, photos, and human-created matches.
 
 There is no automatic matching or custom admin dashboard. The event team reviews profiles, updates `humanStatus` and `humanNotes`, and creates `matches` directly in the Convex dashboard.
 
@@ -20,7 +20,9 @@ Add the values in `agent/.env`:
 - `OPENROUTER_API_KEY` from OpenRouter
 - optional `OPENROUTER_MODEL` and `PORT`
 
-`OPENROUTER_MODEL` defaults to the exact free model `google/gemma-4-26b-a4b-it:free`. It supports Datto's required structured JSON output. You may override it with another compatible OpenRouter model when needed.
+`OPENROUTER_MODEL` defaults to `nvidia/nemotron-3-ultra-550b-a55b:free`. Datto requests high reasoning and strict structured JSON output. You may override the model without changing the code.
+
+The NVIDIA free endpoint is appropriate for development and event testing, but its terms warn against sending personal or confidential information and state that prompts and responses may be logged. Datto messages can contain names, general locations, and availability, so review the provider data policy before a real-user launch and choose a production endpoint whose privacy terms fit the event.
 
 Run checks and the service:
 
