@@ -1,9 +1,17 @@
 import { z } from "zod";
 
+const normalizedEnvironment = {
+  ...process.env,
+  SPECTRUM_PROJECT_ID: process.env.SPECTRUM_PROJECT_ID ?? process.env.PHOTON_PROJECT_ID,
+  SPECTRUM_PROJECT_SECRET:
+    process.env.SPECTRUM_PROJECT_SECRET ?? process.env.PHOTON_PROJECT_SECRET,
+};
+
 const EnvSchema = z.object({
-  PHOTON_PROJECT_ID: z.string().trim().min(1),
-  PHOTON_PROJECT_SECRET: z.string().trim().min(1),
+  SPECTRUM_PROJECT_ID: z.string().trim().min(1),
+  SPECTRUM_PROJECT_SECRET: z.string().trim().min(1),
   CONVEX_URL: z.string().url(),
+  AGENT_SHARED_SECRET: z.string().min(32),
   OPENROUTER_API_KEY: z.string().trim().min(1),
   OPENROUTER_MODEL: z
     .string()
@@ -13,20 +21,21 @@ const EnvSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
 });
 
-const parsed = EnvSchema.safeParse(process.env);
+const parsed = EnvSchema.safeParse(normalizedEnvironment);
 
 if (!parsed.success) {
-  const missing = parsed.error.issues
+  const invalid = parsed.error.issues
     .map((issue) => issue.path.join("."))
     .filter(Boolean)
     .join(", ");
-  throw new Error(`Invalid environment configuration: ${missing}`);
+  throw new Error(`Invalid environment configuration: ${invalid}`);
 }
 
 export const config = {
-  photonProjectId: parsed.data.PHOTON_PROJECT_ID,
-  photonProjectSecret: parsed.data.PHOTON_PROJECT_SECRET,
+  spectrumProjectId: parsed.data.SPECTRUM_PROJECT_ID,
+  spectrumProjectSecret: parsed.data.SPECTRUM_PROJECT_SECRET,
   convexUrl: parsed.data.CONVEX_URL,
+  agentSharedSecret: parsed.data.AGENT_SHARED_SECRET,
   openrouterApiKey: parsed.data.OPENROUTER_API_KEY,
   openrouterModel: parsed.data.OPENROUTER_MODEL,
   port: parsed.data.PORT,

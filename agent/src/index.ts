@@ -27,8 +27,8 @@ healthServer.listen(config.port, "0.0.0.0", () => {
 });
 
 const app = await Spectrum({
-  projectId: config.photonProjectId,
-  projectSecret: config.photonProjectSecret,
+  projectId: config.spectrumProjectId,
+  projectSecret: config.spectrumProjectSecret,
   providers: [imessage.config()],
 });
 
@@ -100,7 +100,7 @@ for await (const [space, message] of app.messages) {
         spectrumMessageId: message.id,
         spectrumUserId,
         spectrumSpaceId: space.id,
-        ...(text?.trim() ? { text: text.trim() } : {}),
+        ...(text !== undefined ? { text } : {}),
         ...(attachment ? { attachment } : {}),
         createdAt: message.timestamp.getTime(),
       });
@@ -120,7 +120,6 @@ for await (const [space, message] of app.messages) {
   } catch (error) {
     console.error("Failed to process inbound Spectrum message", {
       spectrumMessageId: message.id,
-      spectrumUserId,
       error: error instanceof Error ? error.message : "unknown error",
     });
   }

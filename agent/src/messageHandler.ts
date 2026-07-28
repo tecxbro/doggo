@@ -6,26 +6,18 @@ import {
   recordInboundMessage,
   uploadPhoto,
   type ContentType,
-  type DattoProfile,
 } from "./convex.js";
+import {
+  isExplicitConfirmation,
+  isSupportedDogPhoto,
+  MAX_PHOTO_BYTES,
+  MAX_TEXT_CHARACTERS,
+  missingProfileFields,
+  normalizeInboundText,
+  profileWouldBeComplete,
+  unsupportedAttachmentReply,
+} from "./messagePolicy.js";
 import { generateAgentResult, type AgentResult } from "./openrouter.js";
-
-const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
-
-const PROFILE_FIELDS: Array<keyof DattoProfile> = [
-  "ownerName",
-  "dogName",
-  "age",
-  "breed",
-  "size",
-  "location",
-  "personality",
-  "energyLevel",
-  "socialBehavior",
-  "preferredMeetup",
-  "availability",
-  "dealbreakers",
-];
 
 export type IncomingAttachment = {
   kind: "image" | "attachment" | "voice";
@@ -50,33 +42,19 @@ function getContentType(message: IncomingMessage): ContentType {
   return "text";
 }
 
-function getStoredText(message: IncomingMessage): string | undefined {
-  const text = message.text?.trim();
-  if (text) return text;
+function getStoredText(message: IncomingMessage, normalizedText: ReturnType<typeof normalizeInboundText>): string | undefined {
+  if (normalizedText.kind === "accepted") return normalizedText.text;
+  if (normalizedText.kind === "too_long") {
+    return `[text omitted: exceeded ${MAX_TEXT_CHARACTERS} characters]`;
+  }
   if (!message.attachment) return undefined;
   return `[${message.attachment.kind}: ${message.attachment.name}; ${message.attachment.mimeType}]`;
 }
 
-function missingProfileFields(profile: DattoProfile): string[] {
-  const missing = PROFILE_FIELDS.filter((field) => {
-    const value = profile[field];
-    return typeof value !== "string" || value.trim().length === 0;
-  });
-
-  const fields = missing.map(String);
-  if (profile.photoStorageIds.length === 0) fields.push("dogPhoto");
-  return fields;
-}
-
-function unsupportedAttachmentReply(kind: "attachment" | "voice"): string {
-  return kind === "voice"
-    ? "voice notes are dramatic but i can only use texts and dog photos right now 😭 send me the important part as a text?"
-    : "i can only use texts and dog photos for this little experiment. send me the dog evidence instead 🫡";
-}
-
 export async function handleMessage(message: IncomingMessage): Promise<AgentResult> {
   const profile = await getOrCreateProfile(message.spectrumUserId, message.spectrumSpaceId);
-  const storedText = getStoredText(message);
+  const normalizedText = normalizeInboundText(message.text);
+  const storedText = getStoredText(message, normalizedText);
 
   const inbound = await recordInboundMessage({
     spectrumMessageId: message.spectrumMessageId,
@@ -91,8 +69,24 @@ export async function handleMessage(message: IncomingMessage): Promise<AgentResu
     return { replies: [], extracted: {}, profileComplete: profile.profileComplete };
   }
 
+  if (normalizedText.kind === "too_long") {
+    return {
+      replies: ["that message is longer than my leash 😭 send the important part in a shorter text?"],
+      extracted: {},
+      profileComplete: profile.profileComplete,
+    };
+  }
+
   let receivedImage = false;
   if (message.attachment?.kind === "image") {
+    if (!isSupportedDogPhoto(message.attachment.mimeType)) {
+      return {
+        replies: ["send a jpg, png, heic, gif, or webp dog photo and we’re back in business"],
+        extracted: {},
+        profileComplete: profile.profileComplete,
+      };
+    }
+
     if (
       !message.attachment.read ||
       (message.attachment.size !== undefined && message.attachment.size > MAX_PHOTO_BYTES)
@@ -145,24 +139,37 @@ export async function handleMessage(message: IncomingMessage): Promise<AgentResu
   try {
     const result = await generateAgentResult({
       profile: context.profile,
-      recentMessages: context.recentMessages.map((recent) => ({
-        direction: recent.direction,
-        contentType: recent.contentType,
-        ...(recent.text ? { text: recent.text } : {}),
-        createdAt: recent.createdAt,
-      })),
-      newInboundMessage: message.text?.trim() || (receivedImage ? "[dog photo received]" : ""),
+      recentMessages: context.recentMessages
+        .filter((recent) => recent._id !== inbound.messageId)
+        .map((recent) => ({
+          direction: recent.direction,
+          contentType: recent.contentType,
+          ...(recent.text ? { text: recent.text } : {}),
+          createdAt: recent.createdAt,
+        })),
+      newInboundMessage:
+        normalizedText.kind === "accepted"
+          ? normalizedText.text
+          : receivedImage
+            ? "[dog photo received]"
+            : "",
       inboundContainsImage: receivedImage,
       missingFields: missingProfileFields(context.profile),
     });
 
+    const profileComplete =
+      context.profile.profileComplete ||
+      (result.profileComplete &&
+        isExplicitConfirmation(normalizedText.kind === "accepted" ? normalizedText.text : undefined) &&
+        profileWouldBeComplete(context.profile, result.extracted, receivedImage));
+
     await applyProfileExtraction({
       profileId: context.profile._id,
       extracted: result.extracted,
-      profileComplete: result.profileComplete,
+      profileComplete,
     });
 
-    return result;
+    return { ...result, profileComplete };
   } catch (error) {
     console.error("Datto LLM processing failed", {
       spectrumMessageId: message.spectrumMessageId,

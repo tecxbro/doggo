@@ -2,11 +2,12 @@ import { ConvexHttpClient } from "convex/browser";
 import { anyApi } from "convex/server";
 import { z } from "zod";
 
+import type { ProfileExtraction } from "./agentResult.js";
 import { config } from "./config.js";
-import type { ProfileExtraction } from "./openai.js";
 
 const client = new ConvexHttpClient(config.convexUrl);
-const datto = anyApi.datto;
+const datto = (anyApi as any).datto;
+const authenticated = { agentSecret: config.agentSharedSecret } as const;
 
 export type ContentType = "text" | "image" | "attachment";
 
@@ -58,6 +59,7 @@ export async function getOrCreateProfile(
   spectrumSpaceId: string,
 ): Promise<DattoProfile> {
   return client.mutation(datto.getOrCreateProfile, {
+    ...authenticated,
     spectrumUserId,
     spectrumSpaceId,
   }) as Promise<DattoProfile>;
@@ -67,6 +69,7 @@ export async function getProfileAndRecentMessages(
   spectrumUserId: string,
 ): Promise<ProfileContext> {
   return client.query(datto.getProfileAndRecentMessages, {
+    ...authenticated,
     spectrumUserId,
     limit: 20,
   }) as Promise<ProfileContext>;
@@ -80,7 +83,10 @@ export async function recordInboundMessage(args: {
   text?: string;
   createdAt: number;
 }): Promise<{ duplicate: boolean; messageId: string }> {
-  return client.mutation(datto.recordInboundMessage, args) as Promise<{
+  return client.mutation(datto.recordInboundMessage, {
+    ...authenticated,
+    ...args,
+  }) as Promise<{
     duplicate: boolean;
     messageId: string;
   }>;
@@ -93,7 +99,10 @@ export async function recordOutboundMessage(args: {
   text: string;
   createdAt: number;
 }): Promise<{ duplicate: boolean; messageId: string }> {
-  return client.mutation(datto.recordOutboundMessage, args) as Promise<{
+  return client.mutation(datto.recordOutboundMessage, {
+    ...authenticated,
+    ...args,
+  }) as Promise<{
     duplicate: boolean;
     messageId: string;
   }>;
@@ -104,11 +113,14 @@ export async function applyProfileExtraction(args: {
   extracted: ProfileExtraction;
   profileComplete: boolean;
 }): Promise<void> {
-  await client.mutation(datto.applyProfileExtraction, args);
+  await client.mutation(datto.applyProfileExtraction, {
+    ...authenticated,
+    ...args,
+  });
 }
 
 export async function uploadPhoto(bytes: Uint8Array, mimeType: string): Promise<string> {
-  const uploadUrl = (await client.mutation(datto.generatePhotoUploadUrl, {})) as string;
+  const uploadUrl = (await client.mutation(datto.generatePhotoUploadUrl, authenticated)) as string;
   const response = await fetch(uploadUrl, {
     method: "POST",
     headers: { "Content-Type": mimeType },
@@ -128,5 +140,8 @@ export async function attachPhoto(args: {
   spectrumMessageId: string;
   storageId: string;
 }): Promise<void> {
-  await client.mutation(datto.attachPhoto, args);
+  await client.mutation(datto.attachPhoto, {
+    ...authenticated,
+    ...args,
+  });
 }
