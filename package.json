@@ -9,15 +9,10 @@
     "build": "npm run build --workspace datto-agent",
     "typecheck": "npm run typecheck --workspace datto-agent",
     "test": "npm run test --workspace datto-agent",
-    "convex:typecheck": "tsc -p convex/tsconfig.json --noEmit",
-    "check": "npm run typecheck && npm run convex:typecheck && npm test",
-    "convex:codegen": "convex codegen",
-    "convex:dev": "convex dev",
-    "convex:deploy": "convex deploy"
+    "check": "npm run typecheck && npm test"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",
-    "convex": "^1.42.3",
     "typescript": "^7.0.2"
   }
 }
