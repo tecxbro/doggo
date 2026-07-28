@@ -23,6 +23,19 @@ const contentTypeValidator = v.union(
   v.literal("attachment"),
 );
 
+function assertAgentSecret(candidate: string): void {
+  const expected = process.env.AGENT_SHARED_SECRET;
+  if (!expected || candidate.length !== expected.length) {
+    throw new Error("Unauthorized");
+  }
+
+  let mismatch = 0;
+  for (let index = 0; index < expected.length; index += 1) {
+    mismatch |= expected.charCodeAt(index) ^ candidate.charCodeAt(index);
+  }
+  if (mismatch !== 0) throw new Error("Unauthorized");
+}
+
 async function findProfile(ctx: any, spectrumUserId: string) {
   return ctx.db
     .query("profiles")
@@ -32,10 +45,12 @@ async function findProfile(ctx: any, spectrumUserId: string) {
 
 export const getOrCreateProfile = mutation({
   args: {
+    agentSecret: v.string(),
     spectrumUserId: v.string(),
     spectrumSpaceId: v.string(),
   },
   handler: async (ctx, args) => {
+    assertAgentSecret(args.agentSecret);
     const existing = await findProfile(ctx, args.spectrumUserId);
     const now = Date.now();
 
@@ -66,10 +81,12 @@ export const getOrCreateProfile = mutation({
 
 export const getProfileAndRecentMessages = query({
   args: {
+    agentSecret: v.string(),
     spectrumUserId: v.string(),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    assertAgentSecret(args.agentSecret);
     const profile = await findProfile(ctx, args.spectrumUserId);
     if (!profile) throw new Error("Profile not found");
 
@@ -94,6 +111,7 @@ export const getProfileAndRecentMessages = query({
 
 export const recordInboundMessage = mutation({
   args: {
+    agentSecret: v.string(),
     spectrumMessageId: v.string(),
     spectrumUserId: v.string(),
     spectrumSpaceId: v.string(),
@@ -102,6 +120,7 @@ export const recordInboundMessage = mutation({
     createdAt: v.number(),
   },
   handler: async (ctx, args) => {
+    assertAgentSecret(args.agentSecret);
     const existing = await ctx.db
       .query("messages")
       .withIndex("by_spectrum_message_id", (q: any) =>
@@ -112,7 +131,12 @@ export const recordInboundMessage = mutation({
     if (existing) return { duplicate: true, messageId: existing._id };
 
     const messageId = await ctx.db.insert("messages", {
-      ...args,
+      spectrumMessageId: args.spectrumMessageId,
+      spectrumUserId: args.spectrumUserId,
+      spectrumSpaceId: args.spectrumSpaceId,
+      contentType: args.contentType,
+      ...(args.text !== undefined ? { text: args.text } : {}),
+      createdAt: args.createdAt,
       direction: "inbound",
     });
     return { duplicate: false, messageId };
@@ -121,6 +145,7 @@ export const recordInboundMessage = mutation({
 
 export const recordOutboundMessage = mutation({
   args: {
+    agentSecret: v.string(),
     spectrumMessageId: v.string(),
     spectrumUserId: v.string(),
     spectrumSpaceId: v.string(),
@@ -128,6 +153,7 @@ export const recordOutboundMessage = mutation({
     createdAt: v.number(),
   },
   handler: async (ctx, args) => {
+    assertAgentSecret(args.agentSecret);
     const existing = await ctx.db
       .query("messages")
       .withIndex("by_spectrum_message_id", (q: any) =>
@@ -138,7 +164,11 @@ export const recordOutboundMessage = mutation({
     if (existing) return { duplicate: true, messageId: existing._id };
 
     const messageId = await ctx.db.insert("messages", {
-      ...args,
+      spectrumMessageId: args.spectrumMessageId,
+      spectrumUserId: args.spectrumUserId,
+      spectrumSpaceId: args.spectrumSpaceId,
+      text: args.text,
+      createdAt: args.createdAt,
       direction: "outbound",
       contentType: "text",
     });
@@ -148,11 +178,13 @@ export const recordOutboundMessage = mutation({
 
 export const applyProfileExtraction = mutation({
   args: {
+    agentSecret: v.string(),
     profileId: v.id("profiles"),
     extracted: extractedValidator,
     profileComplete: v.boolean(),
   },
   handler: async (ctx, args) => {
+    assertAgentSecret(args.agentSecret);
     const profile = await ctx.db.get(args.profileId);
     if (!profile) throw new Error("Profile not found");
 
@@ -172,17 +204,22 @@ export const applyProfileExtraction = mutation({
 });
 
 export const generatePhotoUploadUrl = mutation({
-  args: {},
-  handler: async (ctx) => ctx.storage.generateUploadUrl(),
+  args: { agentSecret: v.string() },
+  handler: async (ctx, args) => {
+    assertAgentSecret(args.agentSecret);
+    return ctx.storage.generateUploadUrl();
+  },
 });
 
 export const attachPhoto = mutation({
   args: {
+    agentSecret: v.string(),
     profileId: v.id("profiles"),
     spectrumMessageId: v.string(),
     storageId: v.id("_storage"),
   },
   handler: async (ctx, args) => {
+    assertAgentSecret(args.agentSecret);
     const profile = await ctx.db.get(args.profileId);
     if (!profile) throw new Error("Profile not found");
 
