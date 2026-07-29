@@ -179,7 +179,7 @@ export async function handleMessage(message: IncomingMessage): Promise<AgentResu
 
     return { ...result, profileComplete };
   } catch (error) {
-    console.error("Datto LLM processing failed", {
+    console.error("DoggoDates LLM processing failed", {
       spectrumMessageId: message.spectrumMessageId,
       error: error instanceof Error ? error.message : "unknown error",
     });
