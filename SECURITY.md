@@ -1,6 +1,6 @@
 # Security
 
-Datto is a small event experiment, but it handles phone-linked conversations and dog photos. Treat the data as private event data.
+DoggoDates is a small event experiment, but it handles phone-linked conversations and dog photos. Treat the data as private event data.
 
 ## Reporting
 
@@ -22,10 +22,10 @@ Create a dedicated Composio deployment key with only the permissions required fo
 
 ## Composio and Google access
 
-- Datto never receives Google refresh tokens or stores a Google private key; Composio manages the OAuth connection.
-- The Google Sheets and Drive OAuth scopes may permit access to more than the Datto spreadsheet and photo folder.
+- DoggoDates never receives Google refresh tokens or stores a Google private key; Composio manages the OAuth connection.
+- The Google Sheets and Drive OAuth scopes may permit access to more than the DoggoDates spreadsheet and photo folder.
 - Prefer a dedicated event Google account rather than a primary personal or university account.
-- Connect only the `googlesheets` and `googledrive` toolkits needed by Datto.
+- Connect only the `googlesheets` and `googledrive` toolkits needed by DoggoDates.
 - Pin `COMPOSIO_GOOGLE_SHEETS_CONNECTION_ID` and `COMPOSIO_GOOGLE_DRIVE_CONNECTION_ID` when the Composio user has multiple Google accounts.
 - Revoke both Google connections in Composio after the event or immediately after suspected compromise.
 - Do not publish Drive files with `anyone with the link` permissions.
@@ -49,4 +49,4 @@ Create a dedicated Composio deployment key with only the permissions required fo
 
 ## Deployment
 
-Run the agent as a non-root container user with one replica. Expose only the health endpoint. Do not expose a debug endpoint, environment dump, Composio API key, Spectrum secret, or OpenRouter key through the web application.
+Run the DoggoDates agent as a non-root container user with one replica. Expose only the health endpoint. Do not expose a debug endpoint, environment dump, Composio API key, Spectrum secret, or OpenRouter key through the web application.

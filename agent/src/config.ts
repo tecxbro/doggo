@@ -11,7 +11,7 @@ const EnvSchema = z.object({
   SPECTRUM_PROJECT_ID: z.string().trim().min(1),
   SPECTRUM_PROJECT_SECRET: z.string().trim().min(1),
   COMPOSIO_API_KEY: z.string().trim().min(1),
-  COMPOSIO_USER_ID: z.string().trim().min(1).default("datto-admin"),
+  COMPOSIO_USER_ID: z.string().trim().min(1).default("doggodates-admin"),
   COMPOSIO_GOOGLE_SHEETS_CONNECTION_ID: z.string().trim().min(1).optional(),
   COMPOSIO_GOOGLE_DRIVE_CONNECTION_ID: z.string().trim().min(1).optional(),
   GOOGLE_SPREADSHEET_ID: z.string().trim().min(10),

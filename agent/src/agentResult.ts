@@ -130,7 +130,7 @@ export function parseAgentResultContent(content: string): AgentResult {
 
   const replies = parsed.replies.map((reply) => reply.trim()).filter(Boolean);
   if (replies.length === 0) {
-    throw new Error("OpenRouter returned an empty Datto reply");
+    throw new Error("OpenRouter returned an empty DoggoDates reply");
   }
 
   return {

@@ -1,14 +1,14 @@
 {
-  "name": "datto",
+  "name": "doggodates",
   "version": "1.0.0",
   "private": true,
   "workspaces": [
     "agent"
   ],
   "scripts": {
-    "build": "npm run build --workspace datto-agent",
-    "typecheck": "npm run typecheck --workspace datto-agent",
-    "test": "npm run test --workspace datto-agent",
+    "build": "npm run build --workspace doggodates-agent",
+    "typecheck": "npm run typecheck --workspace doggodates-agent",
+    "test": "npm run test --workspace doggodates-agent",
     "check": "npm run typecheck && npm test"
   },
   "devDependencies": {

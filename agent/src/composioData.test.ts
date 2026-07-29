@@ -9,12 +9,12 @@ import {
   profileFromRow,
   profileToRow,
   safeFileName,
-  type DattoMessage,
-  type DattoProfile,
+  type DoggoDatesMessage,
+  type DoggoDatesProfile,
 } from "./composioData.js";
 
 test("round-trips a profile row used by Composio Sheets storage", () => {
-  const profile: DattoProfile = {
+  const profile: DoggoDatesProfile = {
     _id: "user-1",
     spectrumUserId: "user-1",
     spectrumSpaceId: "space-1",
@@ -34,7 +34,7 @@ test("round-trips a profile row used by Composio Sheets storage", () => {
 });
 
 test("round-trips a message row used by Composio Sheets storage", () => {
-  const message: DattoMessage = {
+  const message: DoggoDatesMessage = {
     _id: "message-1",
     spectrumMessageId: "message-1",
     spectrumUserId: "user-1",
