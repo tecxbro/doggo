@@ -23,11 +23,11 @@ const healthServer = createServer((request, response) => {
 });
 
 healthServer.listen(config.port, "0.0.0.0", () => {
-  console.log(`Datto health endpoint listening on port ${config.port}`);
+  console.log(`DoggoDates health endpoint listening on port ${config.port}`);
 });
 
 await initializeComposioStorage();
-console.log("Datto is connected to Google Sheets and Drive through Composio");
+console.log("DoggoDates is connected to Google Sheets and Drive through Composio");
 
 const app = await Spectrum({
   projectId: config.spectrumProjectId,
@@ -36,13 +36,13 @@ const app = await Spectrum({
 });
 
 ready = true;
-console.log("Datto is connected to Photon Spectrum");
+console.log("DoggoDates is connected to Photon Spectrum");
 
 async function shutdown(signal: string): Promise<void> {
   if (shuttingDown) return;
   shuttingDown = true;
   ready = false;
-  console.log(`Received ${signal}; shutting down Datto`);
+  console.log(`Received ${signal}; shutting down DoggoDates`);
 
   await app.stop().catch((error: unknown) => {
     console.error("Spectrum shutdown failed", {
@@ -112,7 +112,7 @@ for await (const [space, message] of app.messages) {
         const sent = await space.send(reply);
         const sentMessage = Array.isArray(sent) ? sent[0] : sent;
         await recordOutboundMessage({
-          spectrumMessageId: sentMessage?.id ?? `datto-outbound-${randomUUID()}`,
+          spectrumMessageId: sentMessage?.id ?? `doggodates-outbound-${randomUUID()}`,
           spectrumUserId,
           spectrumSpaceId: space.id,
           text: reply,
