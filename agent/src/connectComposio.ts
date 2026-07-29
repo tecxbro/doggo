@@ -3,7 +3,7 @@ import { z } from "zod";
 
 const ConnectEnvSchema = z.object({
   COMPOSIO_API_KEY: z.string().trim().min(1),
-  COMPOSIO_USER_ID: z.string().trim().min(1).default("datto-admin"),
+  COMPOSIO_USER_ID: z.string().trim().min(1).default("doggodates-admin"),
 });
 
 const parsed = ConnectEnvSchema.safeParse(process.env);
@@ -33,4 +33,6 @@ for (const toolkit of ["googlesheets", "googledrive"] as const) {
   console.log(`${toolkit}: ${request.redirectUrl}`);
 }
 
-console.log("Open every URL above, sign in to the Google account that owns the Datto Sheet and photo folder, then restart the agent.");
+console.log(
+  "Open every URL above, sign in to the Google account that owns the DoggoDates Sheet and photo folder, then restart the agent.",
+);
