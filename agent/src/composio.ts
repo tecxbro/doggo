@@ -14,13 +14,18 @@ import {
   profileToRow,
   safeFileName,
   type ContentType,
-  type DattoMessage,
-  type DattoProfile,
+  type DoggoDatesMessage,
+  type DoggoDatesProfile,
   type ProfileContext,
 } from "./composioData.js";
 import { config } from "./config.js";
 
-export type { ContentType, DattoMessage, DattoProfile, ProfileContext } from "./composioData.js";
+export type {
+  ContentType,
+  DoggoDatesMessage,
+  DoggoDatesProfile,
+  ProfileContext,
+} from "./composioData.js";
 
 const PROFILE_SHEET = "Profiles";
 const MESSAGE_SHEET = "Messages";
@@ -186,7 +191,7 @@ async function updateRow(
 
 async function findProfile(
   spectrumUserId: string,
-): Promise<{ profile: DattoProfile; rowNumber: number } | null> {
+): Promise<{ profile: DoggoDatesProfile; rowNumber: number } | null> {
   const rows = await getRows(PROFILE_RANGE);
   const index = rows.findIndex((row) => cell(row, 0) === spectrumUserId);
   return index === -1 ? null : { profile: profileFromRow(rows[index] ?? []), rowNumber: index + 2 };
@@ -194,7 +199,7 @@ async function findProfile(
 
 async function findMessage(
   spectrumMessageId: string,
-): Promise<{ message: DattoMessage; rowNumber: number } | null> {
+): Promise<{ message: DoggoDatesMessage; rowNumber: number } | null> {
   const rows = await getRows(MESSAGE_RANGE);
   const index = rows.findIndex((row) => cell(row, 0) === spectrumMessageId);
   return index === -1 ? null : { message: messageFromRow(rows[index] ?? []), rowNumber: index + 2 };
@@ -247,7 +252,7 @@ export async function initializeComposioStorage(): Promise<void> {
 export async function getOrCreateProfile(
   spectrumUserId: string,
   spectrumSpaceId: string,
-): Promise<DattoProfile> {
+): Promise<DoggoDatesProfile> {
   await initializeComposioStorage();
   const existing = await findProfile(spectrumUserId);
   const now = Date.now();
@@ -261,7 +266,7 @@ export async function getOrCreateProfile(
     return existing.profile;
   }
 
-  const profile: DattoProfile = {
+  const profile: DoggoDatesProfile = {
     _id: spectrumUserId,
     spectrumUserId,
     spectrumSpaceId,
@@ -296,7 +301,9 @@ export async function getProfileAndRecentMessages(
   };
 }
 
-async function recordMessage(message: DattoMessage): Promise<{ duplicate: boolean; messageId: string }> {
+async function recordMessage(
+  message: DoggoDatesMessage,
+): Promise<{ duplicate: boolean; messageId: string }> {
   await initializeComposioStorage();
   const existing = await findMessage(message.spectrumMessageId);
   if (existing) return { duplicate: true, messageId: existing.message._id };
@@ -368,7 +375,7 @@ export async function applyProfileExtraction(args: {
   const found = await findProfile(args.profileId);
   if (!found) throw new Error("Profile not found");
 
-  const updated: DattoProfile = {
+  const updated: DoggoDatesProfile = {
     ...found.profile,
     profileComplete: found.profile.profileComplete || args.profileComplete,
     updatedAt: Date.now(),
@@ -450,7 +457,7 @@ export async function attachPhoto(args: {
   const profileResult = await findProfile(args.profileId);
   if (!profileResult) throw new Error("Profile not found");
 
-  const updatedProfile: DattoProfile = {
+  const updatedProfile: DoggoDatesProfile = {
     ...profileResult.profile,
     photoFileIds: profileResult.profile.photoFileIds.includes(args.fileId)
       ? profileResult.profile.photoFileIds
@@ -464,7 +471,7 @@ export async function attachPhoto(args: {
 
   const messageResult = await findMessage(args.spectrumMessageId);
   if (messageResult) {
-    const updatedMessage: DattoMessage = {
+    const updatedMessage: DoggoDatesMessage = {
       ...messageResult.message,
       contentType: "image",
       driveFileId: args.fileId,
