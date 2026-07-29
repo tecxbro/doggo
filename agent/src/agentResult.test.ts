@@ -42,7 +42,7 @@ test("rejects invalid JSON", () => {
 test("rejects empty replies after trimming", () => {
   const payload = validPayload();
   payload.replies = ["   "];
-  assert.throws(() => parseAgentResultContent(JSON.stringify(payload)), /empty Datto reply/);
+  assert.throws(() => parseAgentResultContent(JSON.stringify(payload)), /empty DoggoDates reply/);
 });
 
 test("rejects unexpected structured fields", () => {
