@@ -7,7 +7,7 @@ import {
   type AgentResult,
 } from "./agentResult.js";
 import { config } from "./config.js";
-import { DATTO_PROMPT } from "./prompt.js";
+import { DOGGODATES_PROMPT } from "./prompt.js";
 
 const OpenRouterResponseSchema = z.object({
   choices: z
@@ -27,13 +27,13 @@ export async function generateAgentResult(context: AgentContext): Promise<AgentR
     headers: {
       Authorization: `Bearer ${config.openrouterApiKey}`,
       "Content-Type": "application/json",
-      "HTTP-Referer": "https://github.com/tecxbro/doggo",
-      "X-Title": "Datto",
+      "HTTP-Referer": "https://github.com/tecxbro/doggodates",
+      "X-Title": "DoggoDates",
     },
     body: JSON.stringify({
       model: config.openrouterModel,
       messages: [
-        { role: "system", content: DATTO_PROMPT },
+        { role: "system", content: DOGGODATES_PROMPT },
         { role: "user", content: JSON.stringify(context) },
       ],
       reasoning: {
@@ -43,7 +43,7 @@ export async function generateAgentResult(context: AgentContext): Promise<AgentR
       response_format: {
         type: "json_schema",
         json_schema: {
-          name: "datto_agent_result",
+          name: "doggodates_agent_result",
           strict: true,
           schema: AGENT_RESULT_JSON_SCHEMA,
         },
@@ -65,7 +65,7 @@ export async function generateAgentResult(context: AgentContext): Promise<AgentR
   const completion = OpenRouterResponseSchema.parse(await response.json());
   const content = completion.choices[0]?.message.content;
   if (!content) {
-    throw new Error("OpenRouter returned no structured Datto result");
+    throw new Error("OpenRouter returned no structured DoggoDates result");
   }
 
   return parseAgentResultContent(content);
