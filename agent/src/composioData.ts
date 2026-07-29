@@ -1,7 +1,7 @@
 export type ContentType = "text" | "image" | "attachment";
 export type HumanStatus = "new" | "reviewing" | "matched" | "closed";
 
-export type DattoProfile = {
+export type DoggoDatesProfile = {
   _id: string;
   spectrumUserId: string;
   spectrumSpaceId: string;
@@ -27,7 +27,7 @@ export type DattoProfile = {
   updatedAt: number;
 };
 
-export type DattoMessage = {
+export type DoggoDatesMessage = {
   _id: string;
   spectrumMessageId: string;
   spectrumUserId: string;
@@ -41,9 +41,9 @@ export type DattoMessage = {
 };
 
 export type ProfileContext = {
-  profile: DattoProfile;
+  profile: DoggoDatesProfile;
   photoUrls: string[];
-  recentMessages: DattoMessage[];
+  recentMessages: DoggoDatesMessage[];
 };
 
 export const PROFILE_HEADERS = [
@@ -139,7 +139,7 @@ function parseHumanStatus(value: string): HumanStatus {
   return value === "reviewing" || value === "matched" || value === "closed" ? value : "new";
 }
 
-export function profileFromRow(row: unknown[]): DattoProfile {
+export function profileFromRow(row: unknown[]): DoggoDatesProfile {
   const spectrumUserId = cell(row, 0).trim();
   if (!spectrumUserId) throw new Error("Google Sheets profile row is missing spectrum_user_id");
 
@@ -171,7 +171,7 @@ export function profileFromRow(row: unknown[]): DattoProfile {
   };
 }
 
-export function profileToRow(profile: DattoProfile): Array<string | number | boolean> {
+export function profileToRow(profile: DoggoDatesProfile): Array<string | number | boolean> {
   return [
     profile.spectrumUserId,
     profile.spectrumSpaceId,
@@ -198,7 +198,7 @@ export function profileToRow(profile: DattoProfile): Array<string | number | boo
   ];
 }
 
-export function messageFromRow(row: unknown[]): DattoMessage {
+export function messageFromRow(row: unknown[]): DoggoDatesMessage {
   const spectrumMessageId = cell(row, 0).trim();
   if (!spectrumMessageId) throw new Error("Google Sheets message row is missing spectrum_message_id");
   const direction = cell(row, 3) === "outbound" ? "outbound" : "inbound";
@@ -220,7 +220,7 @@ export function messageFromRow(row: unknown[]): DattoMessage {
   };
 }
 
-export function messageToRow(message: DattoMessage): Array<string | number> {
+export function messageToRow(message: DoggoDatesMessage): Array<string | number> {
   return [
     message.spectrumMessageId,
     message.spectrumUserId,
@@ -236,5 +236,5 @@ export function messageToRow(message: DattoMessage): Array<string | number> {
 
 export function safeFileName(fileName: string): string {
   const cleaned = fileName.replace(/[\\/:*?"<>|\u0000-\u001f]/g, "-").trim();
-  return cleaned || `dog-photo-${Date.now()}`;
+  return cleaned || `doggodates-photo-${Date.now()}`;
 }
